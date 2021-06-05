@@ -1,0 +1,319 @@
+<!doctype html>
+<html>
+<head runat="server">
+    <meta charset="utf-8">
+    {% load staticfiles %}
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content=""/>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>COVID-Visualization</title>
+
+    <link rel="shortcut icon" href="{% static '/assets/img/favicon.ico' %}" type="img/png"/>
+    <link rel="stylesheet" href="{% static '/assets/css/animate.min.css' %}">
+    <link rel="stylesheet" href="{% static '/assets/css/bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static '/assets/css/font-awesome.min.css' %}"/>
+    <link rel="stylesheet" href="{% static '/assets/css/magnific-popup.css' %}"/>
+    <link rel="stylesheet" href="{% static '/assets/css/slick.css' %}"/>
+    <link rel="stylesheet" href="{% static '/assets/css/jquery-nice-select.min.css' %}"/>
+    <link rel="stylesheet" href="{% static '/assets/css/style.css' %}"/>
+
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css"/>
+    <style>
+        html, body, #container {
+            height: 100%;
+            width: 100%;
+        }
+
+        .content-window-card {
+            position: relative;
+            box-shadow: none;
+            bottom: 0;
+            left: 0;
+            width: auto;
+            padding: 0;
+        }
+
+        .content-window-card p {
+            height: 2rem;
+        }
+
+        .custom-info {
+            border: solid 1px silver;
+        }
+
+        div.info-top {
+            position: relative;
+            background: none repeat scroll 0 0 #F9F9F9;
+            border-bottom: 1px solid #CCC;
+            border-radius: 5px 5px 0 0;
+        }
+
+        div.info-top div {
+            display: inline-block;
+            color: #333333;
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 31px;
+            padding: 0 10px;
+        }
+
+        div.info-top img {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            transition-duration: 0.25s;
+        }
+
+        div.info-top img:hover {
+            box-shadow: 0px 0px 5px #000;
+        }
+
+        div.info-middle {
+            font-size: 12px;
+            padding: 10px 6px;
+            line-height: 20px;
+        }
+
+        div.info-bottom {
+            height: 0px;
+            width: 100%;
+            clear: both;
+            text-align: center;
+        }
+
+        div.info-bottom img {
+            position: relative;
+            z-index: 104;
+        }
+
+        span {
+            margin-left: 5px;
+            font-size: 11px;
+        }
+
+        .info-middle img {
+            float: left;
+            margin-right: 6px;
+        }
+    </style>
+    <style type="text/css">
+        #panel {
+            position: fixed;
+            background-color: white;
+            max-height: 90%;
+            overflow-y: auto;
+            top: 10px;
+            right: 10px;
+            width: 280px;
+        }
+
+        #panel .amap-call {
+            background-color: #009cf9;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+
+        #panel .amap-lib-driving {
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+            overflow: hidden;
+        }
+    </style>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css"/>
+    <script src="https://a.amap.com/jsapi_demos/static/demo-center/js/demoutils.js"></script>
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=b917f0b7d553fd7e2d68f023b723270c&plugin=AMap.Driving"></script>
+    <script type="text/javascript" src="https://cache.amap.com/lbs/static/addToolbar.js"></script>
+</head>
+<body>
+
+
+<header class="sticky-header">
+    <div class="container-fluid">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="site-logo">
+                <a href="/index"><img src="{% static '/assets/picture/logo.png' %}" alt="Genial"></a>
+            </div>
+            <div class="header-right">
+
+                <div class="offcanvas-panel">
+                    <a href="javascript:void(0)" class="panel-btn">
+							<span>
+								<span></span>
+								<span></span>
+								<span></span>
+							</span>
+                    </a>
+                    <div class="panel-overly"></div>
+                    <div class="offcanvas-items">
+                        <a href="javascript:void(0)" class="panel-close">
+                            Back <i class="fa fa-angle-right" aria-hidden="true"></i>
+                        </a>
+                        <ul class="offcanvas-menu">
+                            <li><a href="/index">Home</a></li>
+                            <li><a href="/distribution">Distribution</a></li>
+                            <li><a href="/route">Route</a></li>
+                            <li><a href="/add_points">RiskPoint</a></li>
+                        </ul>
+                        <div class="social-icons">
+                            <ul>
+                                <li><a href="#"><i class="fab fa-facebook-f"></i></a></li>
+                                <li><a href="#"><i class="fab fa-instagram"></i></a></li>
+                                <li><a href="#"><i class="fab fa-twitter"></i></a></li>
+                                <li><a href="#"><i class="fab fa-youtube"></i></a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<form id="form1" runat="server">
+    <div id="map_canvas"></div>
+</form>
+
+<div id="container"></div>
+<div id="panel"></div>
+<script type="text/javascript">
+    //基本地图加载
+    var map = new AMap.Map("container", {
+        resizeEnable: true,
+        center: [121.498586, 31.239637],//地图中心点
+        zoom: 13, //地图显示的缩放级别
+        lang: "zh_en" //可选值：en，zh_en, zh_cn
+    });
+
+    var conversion = {{ conversion|safe  }};
+    var discrete = {{ discrete|safe  }};
+    var point = {{ point|safe  }};
+    var counts = {{ counts|safe  }};
+    var markers = [];
+
+    if (conversion.length > 0) {
+        for (var i = 0; i < conversion.length; i++) {
+            var path = conversion[i];
+            var polygon = new AMap.Polygon({
+                path: path,
+                strokeColor: "#FF0000",
+                strokeWeight: 6,
+                strokeOpacity: 0.2,
+                fillOpacity: 0.4,
+                fillColor: '#FF0000',
+                zIndex: 50,
+            })
+            map.add(polygon)
+        }
+    }
+
+    if (discrete.length > 0) {
+        for (var i = 0; i < discrete.length; i++) {
+            var points = discrete[i];
+            var circle = new AMap.Circle({
+                center: points,
+                radius: 8, //半径
+                borderWeight: 3,
+                strokeColor: "#FF33FF",
+                strokeOpacity: 1,
+                strokeWeight: 6,
+                strokeOpacity: 0.2,
+                fillOpacity: 0.4,
+                strokeStyle: 'dashed',
+                strokeDasharray: [10, 10],
+                // 线样式还支持 'dashed'
+                fillColor: '#1791fc',
+                zIndex: 50,
+            })
+            circle.setMap(map)
+        }
+    }
+
+    var infoWindow = new AMap.InfoWindow({offset: new AMap.Pixel(0, -30)});
+    for (var i = 0, marker; i < point.length; i++) {
+        var marker = new AMap.Marker({
+            position: point[i],
+            map: map
+        });
+        var str = ""
+        if(counts[i] <= 5)
+            str = "0~5"
+        else if (counts[i] > 5 && counts[i] <=10)
+            str = "6~10"
+        else if (counts[i] > 10 && counts[i] <=20)
+            str = "11~20"
+        else if (counts[i] > 20 && counts[i] <=30)
+            str = "21~30"
+        else if (counts[i] > 30 && counts[i] <=40)
+            str = "31~40"
+        else if (counts[i] > 40 )
+            str = ">40"
+        marker.content = 'Infected area: the current number of infections is: '+str ;
+        marker.on('click', markerClick);
+        marker.emit('click', {target: marker});
+    }
+
+     var infoWindow = new AMap.InfoWindow({offset: new AMap.Pixel(0, -30)});
+    for (var i = 0, marker; i < discrete.length; i++) {
+        var marker = new AMap.Marker({
+            position: discrete[i],
+            map: map
+        });
+
+        marker.content = 'Infected area: the current number of infections is: 0~5' ;
+        marker.on('click', markerClick);
+        marker.emit('click', {target: marker});
+    }
+
+    function markerClick(e) {
+        infoWindow.setContent(e.target.content);
+        infoWindow.open(map, e.target.getPosition());
+    }
+
+    map.setFitView();
+
+</script>
+
+
+<footer>
+    <div class="footer-copyright-area">
+        <div class="container container-1360">
+            <div class="row align-items-center">
+                <div class="col-lg-6 col-12">
+                    <div class="social-links">
+                        <ul>
+                            <li class="title">Follow Me</li>
+                            <li><a href="#">Twitter</a></li>
+                            <li><a href="#">Facebook</a></li>
+                            <li><a href="#">Youtube</a></li>
+                            <li><a href="#">Instagram</a></li>
+                            <li><a href="#">Linkedin</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-12">
+                    <div class="copyright-text text-lg-right">
+                        <p cclass="copyright"> All Rights Reserved &copy;
+                            <script>document.write(new Date().getFullYear());</script>
+                            COVID-19 Navigation | Design by Qiaoqiao Li & Jiaxin Qin
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="{% static '/assets/js/modernizr-3.6.0.min.js' %}"></script>
+<script src="{% static '/assets/js/jquery-1.12.4.min.js' %}"></script>
+<script src="{% static '/assets/js/bootstrap.min.js' %}"></script>
+<script src="{% static '/assets/js/popper.min.js' %}"></script>
+<script src="{% static '/assets/js/slick.min.js' %}"></script>
+<script src="{% static '/assets/js/imagesloaded.pkgd.min.js' %}"></script>
+<script src="{% static '/assets/js/isotope.pkgd.min.js' %}"></script>
+<script src="{% static '/assets/js/jquery.magnific-popup.min.js' %}"></script>
+<script src="{% static '/assets/js/jquery.nice-select.min.js' %}"></script>
+<script src="{% static '/assets/js/main.js' %}"></script>
+
+</body>
+</html>
+
