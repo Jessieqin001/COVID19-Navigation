@@ -1,0 +1,349 @@
+<!doctype html>
+<html>
+<head runat="server">
+    <meta charset="utf-8">
+    {% load staticfiles %}
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content=""/>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>COVID-Visualization</title>
+
+    <link rel="shortcut icon" href="{% static '/assets/img/favicon.ico' %}" type="img/png"/>
+    <link rel="stylesheet" href="{% static '/assets/css/animate.min.css' %}">
+    <link rel="stylesheet" href="{% static '/assets/css/bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static '/assets/css/font-awesome.min.css' %}"/>
+    <link rel="stylesheet" href="{% static '/assets/css/magnific-popup.css' %}"/>
+    <link rel="stylesheet" href="{% static '/assets/css/slick.css' %}"/>
+    <link rel="stylesheet" href="{% static '/assets/css/jquery-nice-select.min.css' %}"/>
+    <link rel="stylesheet" href="{% static '/assets/css/style.css' %}"/>
+
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css"/>
+
+    <style type="text/css">
+        html,
+        body,
+        #container {
+            width: 100%;
+            height: 100%;
+        }
+
+        #panel {
+            position: fixed;
+            background-color: white;
+            max-height: 90%;
+            overflow-y: auto;
+            top: 10px;
+            right: 295px;
+            width: 280px;
+        }
+
+        #panel1 {
+            position: fixed;
+            background-color: white;
+            max-height: 90%;
+            overflow-y: auto;
+            top: 10px;
+            right: 10px;
+            width: 280px;
+        }
+
+        #panel .amap-call {
+            background-color: #009cf9;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+
+        #panel1 .amap-call {
+            background-color: #009cf9;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+
+        #panel .amap-lib-walking {
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+            overflow: hidden;
+        }
+
+        #panel1 .amap-lib-walking {
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+            overflow: hidden;
+        }
+    </style>
+
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css"/>
+    <script type="text/javascript"
+            src="https://webapi.amap.com/maps?v=1.4.15&key=b917f0b7d553fd7e2d68f023b723270c&plugin=AMap.Walking,AMap.Riding,AMap.Autocomplete,AMap.Transfer,AMap.PlaceSearch,AMap.Driving"></script>
+    <script src="https://a.amap.com/jsapi_demos/static/demo-center/js/demoutils.js"></script>
+    <script type="text/javascript" src="https://cache.amap.com/lbs/static/addToolbar.js"></script>
+
+</head>
+<body>
+
+<header class="sticky-header">
+    <div class="container-fluid">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="site-logo">
+                <a href="/index"><img src="{% static '/assets/picture/logo.png' %}" alt="Genial"></a>
+            </div>
+            <div class="header-right">
+
+                <div class="offcanvas-panel">
+                    <a href="javascript:void(0)" class="panel-btn">
+							<span>
+								<span></span>
+								<span></span>
+								<span></span>
+							</span>
+                    </a>
+                    <div class="panel-overly"></div>
+                    <div class="offcanvas-items">
+                        <a href="javascript:void(0)" class="panel-close">
+                            Back <i class="fa fa-angle-right" aria-hidden="true"></i>
+                        </a>
+                        <ul class="offcanvas-menu">
+                            <li><a href="/index">Home</a></li>
+                            <li><a href="/distribution">Distribution</a></li>
+                            <li><a href="/route">Route</a></li>
+                            <li><a href="/add_points">RiskPoint</a></li>
+                        </ul>
+                        <div class="social-icons">
+                            <ul>
+                                <li><a href="#"><i class="fab fa-facebook-f"></i></a></li>
+                                <li><a href="#"><i class="fab fa-instagram"></i></a></li>
+                                <li><a href="#"><i class="fab fa-twitter"></i></a></li>
+                                <li><a href="#"><i class="fab fa-youtube"></i></a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<form id="form1" runat="server">
+    <div id="map_canvas"></div>
+</form>
+
+<div id="container"></div>
+<div id="panel"></div>
+<div id="panel1"></div>
+<script type="text/javascript">
+
+    var conversion = {{ conversion|safe  }};
+    {#var avoidconversion = {{ avoidconversion|safe  }};#}
+
+    //基本地图加载
+    var map = new AMap.Map("container", {
+        resizeEnable: true,
+        center: [121.498586, 31.239637],//地图中心点
+        zoom: 11, //地图显示的缩放级别
+        lang: "zh_en" //可选值：en，zh_en, zh_cn
+    });
+    //步行导航
+    var walking = new AMap.Driving({
+        map: map,
+        panel: "panel"
+    });
+    walking.search([
+        {keyword: '{{ start|safe  }}', city: '上海'},
+        {keyword: '{{ end|safe  }}', city: '上海'}
+    ], function (status, result) {
+        // result即是对应的步行路线数据信息，相关数据结构文档请参考
+        if (status === 'complete') {
+            log.success('Route Drawing Completed!')
+        } else {
+            log.error('Data Information Query Failed!' + result)
+        }
+    });
+
+
+    var driving = new AMap.Driving({
+        map: map,
+        panel: "panel1",
+        policy: AMap.DrivingPolicy.LEAST_TIME
+    });
+
+    driving.setAvoidPolygons(conversion);
+
+    driving.search([
+        {keyword: '{{ start|safe  }}', city: '上海'},
+        {keyword: '{{ end|safe  }}', city: '上海'},
+    ], function (status, result) {
+        // result 即是对应的驾车导航信息，相关数据结构文档请参考  https://lbs.amap.com/api/javascript-api/reference/route-search#m_DrivingResult
+        if (status === 'complete') {
+            log.success('Route Drawing Completed!')
+        } else {
+            log.error('Data Information Query Failed!' + result)
+        }
+    });
+
+
+    var point = {{ point|safe  }};
+    var counts = {{ counts|safe  }};
+    var discrete = {{ discrete|safe  }};
+
+   if (conversion.length > 0) {
+        for (var i = 0; i < conversion.length; i++) {
+            var path = conversion[i];
+            var polygon = new AMap.Polygon({
+                path: path,
+                strokeColor: "#FF0000",
+                strokeWeight: 6,
+                strokeOpacity: 0.2,
+                fillOpacity: 0.4,
+                fillColor: '#FF0000',
+                zIndex: 50,
+            })
+            map.add(polygon)
+        }
+    }
+
+    var infoWindow = new AMap.InfoWindow({offset: new AMap.Pixel(0, -30)});
+    for (var i = 0, marker; i < point.length; i++) {
+        var marker = new AMap.Marker({
+            position: point[i],
+            map: map
+        });
+         var str = ""
+        if(counts[i] <= 5)
+            str = "0~5"
+        else if (counts[i] > 5 && counts[i] <=10)
+            str = "6~10"
+        else if (counts[i] > 10 && counts[i] <=20)
+            str = "11~20"
+        else if (counts[i] > 20 && counts[i] <=30)
+            str = "21~30"
+        else if (counts[i] > 30 && counts[i] <=40)
+            str = "31~40"
+        else if (counts[i] > 40 )
+            str = ">40"
+        marker.content = 'Infected area: the current number of infections is: '+str ;
+        marker.on('click', markerClick);
+        marker.emit('click', {target: marker});
+    }
+    var infoWindow = new AMap.InfoWindow({offset: new AMap.Pixel(0, -30)});
+    for (var i = 0, marker; i < discrete.length; i++) {
+        var marker = new AMap.Marker({
+            position: discrete[i],
+            map: map
+        });
+
+        marker.content = 'Infected area: the current number of infections is: 0~5' ;
+        marker.on('click', markerClick);
+        marker.emit('click', {target: marker});
+    }
+
+    function markerClick(e) {
+        infoWindow.setContent(e.target.content);
+        infoWindow.open(map, e.target.getPosition());
+    }
+
+    map.setFitView();
+
+</script>
+
+<section class="contact-section1">
+    <div class="container">
+        <div class="row align-items-center justify-content-center">
+            <div class="col-lg-12 col-md-3">
+                <div class="contact-text">
+                    <div class="contact-form">
+                        <form action="/route" method="post">
+                            <div class="row">
+                                <div class="col-lg-4">
+                                    <input type="text" name="start" id="startinput" placeholder="Starting Point" value="{{ start }}"
+                                           oninvalid="setCustomValidity('Please Enter Location Information!');"
+                                           oninput="setCustomValidity('');" required/>
+                                </div>
+                                <div class="col-lg-4">
+                                    <input type="text" name="end" id="endinput" placeholder="Ending Point" value="{{ end }}"
+                                           oninvalid="setCustomValidity('Please Enter Location Information!');"
+                                           oninput="setCustomValidity('');" required/>
+                                </div>
+                                <div class="col-3">
+                                    <button type="submit">Search</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+<footer>
+    <div class="footer-copyright-area">
+        <div class="container container-1360">
+            <div class="row align-items-center">
+                <div class="col-lg-6 col-12">
+                    <div class="social-links">
+                        <ul>
+                            <li class="title">Follow Me</li>
+                            <li><a href="#">Twitter</a></li>
+                            <li><a href="#">Facebook</a></li>
+                            <li><a href="#">Youtube</a></li>
+                            <li><a href="#">Instagram</a></li>
+                            <li><a href="#">Linkedin</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-12">
+                    <div class="copyright-text text-lg-right">
+                        <p cclass="copyright"> All Rights Reserved &copy;
+                            <script>document.write(new Date().getFullYear());</script>
+                            COVID-19 Navigation | Design by Qiaoqiao Li & Jiaxin Qin
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script type="text/javascript">
+    //输入提示
+    var startOptions = {
+        input: "startinput"
+    };
+    var start = new AMap.Autocomplete(startOptions);
+    var startSearch = new AMap.PlaceSearch({
+        map: map
+    });  //构造地点查询类
+    AMap.event.addListener(start, "select", select);//注册监听，当选中某条记录时会触发
+    function select(e) {
+        startSearch.setCity(e.poi.adcode);
+        startSearch.search(e.poi.name);  //关键字查询查询
+    }
+
+    var endOptions = {
+        input: "endinput"
+    };
+    var end = new AMap.Autocomplete(endOptions);
+    var endSearch = new AMap.PlaceSearch({
+        map: map
+    });  //构造地点查询类
+    AMap.event.addListener(end, "select", select);//注册监听，当选中某条记录时会触发
+    function select(e) {
+        endSearch.setCity(e.poi.adcode);
+        endSearch.search(e.poi.name);  //关键字查询查询
+    }
+</script>
+
+<script src="{% static '/assets/js/modernizr-3.6.0.min.js' %}"></script>
+<script src="{% static '/assets/js/jquery-1.12.4.min.js' %}"></script>
+<script src="{% static '/assets/js/bootstrap.min.js' %}"></script>
+<script src="{% static '/assets/js/popper.min.js' %}"></script>
+<script src="{% static '/assets/js/slick.min.js' %}"></script>
+<script src="{% static '/assets/js/imagesloaded.pkgd.min.js' %}"></script>
+<script src="{% static '/assets/js/isotope.pkgd.min.js' %}"></script>
+<script src="{% static '/assets/js/jquery.magnific-popup.min.js' %}"></script>
+<script src="{% static '/assets/js/jquery.nice-select.min.js' %}"></script>
+<script src="{% static '/assets/js/main.js' %}"></script>
+
+</body>
+</html>

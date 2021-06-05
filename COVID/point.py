@@ -132,6 +132,12 @@ def dbs(data, data2, eps=300, min_samples=3):
             dp_y = proxy.randomise(point[1])
             newCoreSample.append([point[0], point[1]])
             newCoreSample.append([dp_x, dp_y])
+        if len(newCoreSample) < 3:
+            for point in coreSamples:
+                dp_x = proxy.randomise(point[0])
+                dp_y = proxy.randomise(point[1])
+                newCoreSample.append([point[0], point[1]])
+                newCoreSample.append([dp_x, dp_y])
         newCoreSample = np.array(newCoreSample)
         if (len(newCoreSample) >= 6):
             #Convex hull only if the number of points is greater than 3

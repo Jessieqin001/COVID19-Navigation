@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page-main %}
+
+    <section class="post-details-area">
+        <div class="container container-1000">
+            <div class="post-details">
+                <div class="entry-header">
+                    <h2 class="title">Risk Point Information</h2>
+                    <ul class="post-meta">
+                        <li>
+                            <script>document.write(new Date().toDateString().split(" ")[1]);</script>
+                            -
+                            <script>document.write(new Date().getDate());</script>
+                            -
+                            <script>document.write(new Date().getFullYear());</script>
+                        </li>
+                    </ul>
+                </div>
+                <div class="entry-footer">
+                    <div class="post-tags">
+                        <span>Classification:</span>
+                        <strong><a href="/add_points">Contributors</a>,</strong>
+                        <a href="/infected_points">Infected people</a>
+                    </div>
+                </div>
+            </div>
+            <br><br><br>
+            <div class="comment-template">
+                <div class="comment-form">
+                    <form action="/add_points" method="post">
+                        {% if message %}
+                            <div class="alert alert-warning">{{ message }}</div>
+                        {% endif %}
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <input type="number"  step="0.0000000000000001" name="longitude" placeholder="Longitude" oninvalid="setCustomValidity('Please Enter Correct Longitude Information!');"
+                                       oninput="setCustomValidity('');" required/>
+                            </div>
+                            <div class="col-sm-6">
+                                <input type="number"  step="0.0000000000000001" name="latitude" placeholder="Latitude" oninvalid="setCustomValidity('Please Enter Correct Latitude Information!');"
+                                       oninput="setCustomValidity('');" required/>
+                            </div>
+                            <div class="col-sm-6">
+                                <input type="date" name="date" placeholder="Date">
+                            </div>
+                            <div class="col-sm-6">
+                                <input type="text" id="place" name="place" placeholder="Place">
+                            </div>
+
+                            <div class="col-12">
+                                <button type="submit">Post<i class="far fa-arrow-right"></i></button>
+                            </div>
+                        </div>
+                    </form>
+                    <br>
+                </div>
+            </div>
+        </div>
+    </section>
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=b917f0b7d553fd7e2d68f023b723270c&plugin=AMap.Walking,AMap.Autocomplete,AMap.PlaceSearch"></script>
+    <script type="text/javascript" src="https://cache.amap.com/lbs/static/addToolbar.js"></script>
+    <script type="text/javascript">
+    //输入提示
+    AMap.plugin(['AMap.Autocomplete','AMap.PlaceSearch'],function(){
+        var autoOptions = {
+            city: "上海", //城市，默认全国
+            input: "place"//使用联想输入的input的id（也就是上边那个唯一的id）
+        };
+        autocomplete= new AMap.Autocomplete(autoOptions);
+        var placeSearch = new AMap.PlaceSearch({
+            city:'上海',
+            map:map
+        })
+        AMap.event.addListener(autocomplete, "select", function(e){
+
+            placeSearch.setCity(e.poi.adcode);
+            placeSearch.search(e.poi.name)
+        });
+    });
+
+
+
+</script>
+
+{% endblock %}
