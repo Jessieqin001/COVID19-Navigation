@@ -133,7 +133,7 @@
 <script type="text/javascript">
 
     var conversion = {{ conversion|safe  }};
-    {#var avoidconversion = {{ avoidconversion|safe  }};#}
+    var avoidconversion = {{ avoidconversion|safe  }};
 
     //基本地图加载
     var map = new AMap.Map("container", {
@@ -166,7 +166,7 @@
         policy: AMap.DrivingPolicy.LEAST_TIME
     });
 
-    driving.setAvoidPolygons(conversion);
+    driving.setAvoidPolygons(avoidconversion);
 
     driving.search([
         {keyword: '{{ start|safe  }}', city: '上海'},

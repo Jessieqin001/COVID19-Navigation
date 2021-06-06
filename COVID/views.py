@@ -32,7 +32,7 @@ def reload():
     longitude = []
     latitude = []
     directory = os.path.abspath(os.path.join(os.path.dirname("__file__"), os.path.pardir))
-    datas = pd.read_csv(directory + "/data/points2.csv", usecols=['0', '1'])
+    datas = pd.read_csv(directory + "/data/points18.csv", usecols=['0', '1'])
     current_data = time.strftime("%Y-%m-%d", time.localtime())
     Infected = uuid.uuid4().hex
     for item in datas.values.tolist():
@@ -104,7 +104,7 @@ def calculate_distance(lon1,lat1,lon2,lat2):
     return c * r * 1000
 
 def avoid_conersion(start,end,conversion):
-    if len(conversion) <= 20:
+    if len(conversion) <= 18:
         return conversion
 
     avoidconersion = []
@@ -119,7 +119,7 @@ def avoid_conersion(start,end,conversion):
         dic[i] = distance
     dic_sort = sorted(dic.items(),key= lambda x:x[1])
 
-    for i in range(20):
+    for i in range(18):
         if(len(conversion[dic_sort[i][0]])) >= 16:
             avoidconersion.append(conversion[dic_sort[i][0]][:16])
         else:
@@ -159,7 +159,11 @@ def route(request):
         for item in conversion:
             point.append(item[0])
         location = get_location()
-        return render(request, 'route_show.html', {'start': start, 'end': end, 'conversion': conversion, 'discrete': discrete,'point': point, 'counts': counts, 'location': location})
+        for i in conversion:
+            print(len(i))
+        print("conversion的个数",len(conversion))
+        avoidconversion = avoid_conersion(start,end,conversion)
+        return render(request, 'route_show.html', {'start': start, 'end': end, 'avoidconversion':avoidconversion,'conversion': conversion, 'discrete': discrete,'point': point, 'counts': counts, 'location': location})
 
 
 def add_points(request):
